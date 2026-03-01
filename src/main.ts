@@ -12,10 +12,12 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   });
 
-  await app.listen(4000, '0.0.0.0');
-  console.log('Backend running at http://localhost:4000');
+  const port = Number(process.env.PORT || 4000);
+  await app.listen(port, '0.0.0.0');
+
+  console.log(`Backend running on port ${port}`);
 }
 bootstrap();
