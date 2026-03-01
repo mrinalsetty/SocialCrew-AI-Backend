@@ -11,7 +11,7 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
-  const allowedOrigins = (process.env.CORS_ORIGINS || '')
+  const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
@@ -23,6 +23,7 @@ async function bootstrap() {
   const port = Number(process.env.PORT || 4000);
   await app.listen(port, '0.0.0.0');
 
-  console.log(`Backend running on port ${port}`);
+  console.log(`SocialCrew backend running on http://localhost:${port}`);
 }
-bootstrap();
+
+void bootstrap();

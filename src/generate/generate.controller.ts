@@ -1,12 +1,18 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { GenerateService } from './generate.service';
+import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
+import { GenerateService, GenerateResponse } from './generate.service';
 
 @Controller('generate')
 export class GenerateController {
   constructor(private readonly generateService: GenerateService) {}
 
   @Post()
-  generate(@Body() body: { topic: string }) {
-    return this.generateService.generateFromTopic(body.topic ?? '');
+  async generate(@Body() body: { topic?: string }): Promise<GenerateResponse> {
+    const topic = body?.topic?.trim();
+
+    if (!topic) {
+      throw new BadRequestException('Topic is required');
+    }
+
+    return this.generateService.generateFromTopic(topic);
   }
 }
