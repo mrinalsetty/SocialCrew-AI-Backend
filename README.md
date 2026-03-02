@@ -1,37 +1,39 @@
-# SocialCrew AI Backend
+## 9. Frontend README
 
-NestJS + Fastify backend for the SocialCrew AI two-agent demo.
+### `frontend/README.md`
 
-## What it does
+````md
+# SocialCrew AI Frontend
 
-- Exposes a health endpoint for uptime and live status
-- Exposes backend metadata for the frontend dashboard
-- Runs a two-agent LangGraph workflow:
-  1. Content Creator agent
-  2. Social Analyst agent
-- Uses Groq as the LLM provider
+Next.js App Router frontend for the SocialCrew AI two-agent demo.
+
+## Features
+
+- Topic input and generation flow
+- Live backend status badge in the top-right
+- Status turns green when backend is reachable
+- Status turns orange when backend is sleeping or unavailable
+- Backend dashboard page at `/backend`
+- Dark neon UI without changing the original theme direction
 
 ## Stack
 
-- NestJS
-- Fastify
+- Next.js App Router
 - TypeScript
-- LangGraph JS
-- Groq SDK
+- Tailwind CSS
 
-## Endpoints
+## Routes
 
-- `GET /health`
-- `GET /system/meta`
-- `POST /generate`
+- `/` → main app
+- `/backend` → backend dashboard
 
 ## Environment variables
 
+### Local
+
+Create `.env.local`:
+
 ```env
-PORT=4000
-CORS_ORIGINS=http://localhost:3000,https://your-frontend.vercel.app
-GROQ_API_KEY=your_groq_api_key
-GROQ_CREATOR_MODEL=llama-3.1-8b-instant
-GROQ_ANALYST_MODEL=llama-3.3-70b-versatile
-APP_VERSION=1.1.0
+NEXT_PUBLIC_API_URL=http://localhost:4000
 ```
+````

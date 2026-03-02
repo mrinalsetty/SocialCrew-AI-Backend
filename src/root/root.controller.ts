@@ -5,6 +5,8 @@ export class RootController {
   @Get()
   @Header('Content-Type', 'text/html; charset=utf-8')
   getDashboard(): string {
+    const frontendUrl = process.env.FRONTEND_APP_URL || 'http://localhost:3000';
+
     return `
 <!DOCTYPE html>
 <html lang="en">
@@ -25,6 +27,7 @@ export class RootController {
     }
 
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -49,6 +52,14 @@ export class RootController {
       border-bottom: 1px solid var(--border);
       padding-bottom: 18px;
       margin-bottom: 28px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .title {
@@ -83,6 +94,22 @@ export class RootController {
       border-radius: 999px;
       background: var(--orange);
       box-shadow: 0 0 14px rgba(251,146,60,0.85);
+    }
+
+    .header-link {
+      color: #04131a;
+      font-weight: 700;
+      text-decoration: none;
+      border: 1px solid rgba(34,211,238,0.25);
+      background: var(--cyan);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      transition: opacity 0.2s ease;
+    }
+
+    .header-link:hover {
+      opacity: 0.92;
     }
 
     .grid {
@@ -230,9 +257,13 @@ export class RootController {
         </div>
       </div>
 
-      <div id="statusBadge" class="status-badge">
-        <span id="statusDot" class="status-dot"></span>
-        <span id="statusText">Checking backend…</span>
+      <div class="header-actions">
+        <a class="header-link" href="${frontendUrl}" target="_blank" rel="noreferrer">Open Frontend App</a>
+
+        <div id="statusBadge" class="status-badge">
+          <span id="statusDot" class="status-dot"></span>
+          <span id="statusText">Checking backend…</span>
+        </div>
       </div>
     </div>
 
