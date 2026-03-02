@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import Groq from 'groq-sdk';
 import type { GeneratedPost } from './content-creator.service';
 import type { GenerateRequest } from '../generate/generate.types';
+import type { StrategyAgentOutput } from './strategy-agent.service';
 
 export type AnalystAgentOutput = {
   bestPost: number;
@@ -22,6 +23,7 @@ export class SocialAnalystService {
   async run(
     input: GenerateRequest,
     posts: GeneratedPost[],
+    strategy: StrategyAgentOutput,
   ): Promise<AnalystAgentOutput> {
     const groq = this.getClient();
 
@@ -44,10 +46,9 @@ Return ONLY valid JSON in this exact shape:
 }
 
 Rules:
-- Pick the single strongest post by id.
-- Evaluate for the requested platform, audience, tone, and CTA style.
-- Explain why it wins in plain English.
-- Suggestions must be concrete and practical.
+- Pick the strongest post by id.
+- Evaluate for platform fit, clarity, hook strength, and likely engagement.
+- Suggestions must be concrete.
 - No markdown code fences.
           `.trim(),
         },
@@ -56,10 +57,14 @@ Rules:
           content: `
 Topic: ${input.topic}
 Platform: ${input.platform}
-Brand Name: ${input.brandName || 'Not provided'}
-Audience: ${input.audience || 'General audience'}
-Tone: ${input.tone || 'Professional'}
+Brand Name: ${input.brandName || 'Personal Brand'}
+Audience: ${input.audience || 'Founders, creators, small business operators'}
+Tone: ${input.tone || 'Smart, practical, human'}
 CTA Style: ${input.ctaStyle || 'Soft CTA'}
+
+Strategy Brief: ${strategy.brief}
+Hook Style: ${strategy.hookStyle}
+CTA Approach: ${strategy.ctaApproach}
 
 Posts:
 ${JSON.stringify(posts, null, 2)}
@@ -108,7 +113,13 @@ ${JSON.stringify(posts, null, 2)}
       .trim();
 
     try {
-      return JSON.parse(cleaned) as RawAnalystResponse;
+      const parsedUnknown: unknown = JSON.parse(cleaned);
+
+      if (!parsedUnknown || typeof parsedUnknown !== 'object') {
+        return {};
+      }
+
+      return parsedUnknown as RawAnalystResponse;
     } catch {
       throw new InternalServerErrorException(
         'Social Analyst returned invalid JSON.',

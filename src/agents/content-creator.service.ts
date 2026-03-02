@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import Groq from 'groq-sdk';
 import type { GenerateRequest } from '../generate/generate.types';
+import type { StrategyAgentOutput } from './strategy-agent.service';
 
 export type GeneratedPost = {
   id: number;
@@ -28,7 +29,10 @@ type RawApiResponse = {
 
 @Injectable()
 export class ContentCreatorService {
-  async run(input: GenerateRequest): Promise<CreatorAgentOutput> {
+  async run(
+    input: GenerateRequest,
+    strategy: StrategyAgentOutput,
+  ): Promise<CreatorAgentOutput> {
     const groq = this.getClient();
 
     const completion = await groq.chat.completions.create({
@@ -56,10 +60,9 @@ Return ONLY valid JSON in this exact shape:
 
 Rules:
 - Generate exactly 3 posts.
-- Write specifically for the requested platform.
-- Respect the requested brand tone, audience, and CTA style.
-- Make each post meaningfully different in angle.
-- Keep hashtags relevant and not spammy.
+- Make them clearly different in angle and phrasing.
+- Write for the requested platform.
+- Follow the strategy brief.
 - No markdown code fences.
           `.trim(),
         },
@@ -68,12 +71,18 @@ Rules:
           content: `
 Topic: ${input.topic}
 Platform: ${input.platform}
-Brand Name: ${input.brandName || 'Not provided'}
-Audience: ${input.audience || 'General audience'}
-Tone: ${input.tone || 'Professional'}
+Brand Name: ${input.brandName || 'Personal Brand'}
+Audience: ${input.audience || 'Founders, creators, small business operators'}
+Tone: ${input.tone || 'Smart, practical, human'}
 CTA Style: ${input.ctaStyle || 'Soft CTA'}
 
-Platform guidance:
+Strategy Angle: ${strategy.angle}
+Audience Fit: ${strategy.audienceFit}
+Hook Style: ${strategy.hookStyle}
+CTA Approach: ${strategy.ctaApproach}
+Strategy Brief: ${strategy.brief}
+
+Platform Guidance:
 ${this.getPlatformGuidance(input.platform)}
           `.trim(),
         },
@@ -108,19 +117,19 @@ ${this.getPlatformGuidance(input.platform)}
   private getPlatformGuidance(platform: GenerateRequest['platform']): string {
     switch (platform) {
       case 'LINKEDIN':
-        return 'Write thought-leadership style, insight-driven, clean paragraphs, strong professional hook.';
+        return 'Professional, insight-led, clean paragraph flow, thought leadership tone.';
       case 'YOUTUBE':
-        return 'Write like a YouTube post/video concept: title-forward, curiosity-driven, clear audience payoff.';
+        return 'High-curiosity, title-forward, content-teaser style with clear viewer payoff.';
       case 'FACEBOOK':
-        return 'Write conversationally, community-friendly, slightly warmer, engagement-oriented.';
+        return 'Warm, conversational, community-friendly, engagement-oriented.';
       case 'X':
-        return 'Write concise, punchy, high-signal, hook-heavy, easy to skim.';
+        return 'Short, punchy, sharp, high-signal, fast to skim.';
       case 'INSTAGRAM':
-        return 'Write visually driven, emotionally engaging, caption-first, relatable and crisp.';
+        return 'Caption-friendly, emotionally engaging, visually suggestive, concise.';
       case 'THREADS':
-        return 'Write casual, human, insight-rich, conversational and current.';
+        return 'Casual, human, insight-rich, current, conversational.';
       default:
-        return 'Write for a general social media audience.';
+        return 'Write for a general social audience.';
     }
   }
 
@@ -132,7 +141,13 @@ ${this.getPlatformGuidance(input.platform)}
       .trim();
 
     try {
-      return JSON.parse(cleaned) as RawApiResponse;
+      const parsedUnknown: unknown = JSON.parse(cleaned);
+
+      if (!parsedUnknown || typeof parsedUnknown !== 'object') {
+        return {};
+      }
+
+      return parsedUnknown as RawApiResponse;
     } catch {
       throw new InternalServerErrorException(
         'Content Creator returned invalid JSON.',

@@ -9,16 +9,22 @@ import {
   AnalystAgentOutput,
   SocialAnalystService,
 } from '../agents/social-analyst.service';
+import {
+  StrategyAgentOutput,
+  StrategyAgentService,
+} from '../agents/strategy-agent.service';
 import type { GenerateRequest, SocialPlatform } from './generate.types';
 
 const SocialCrewState = Annotation.Root({
   request: Annotation<GenerateRequest>,
+  strategyOutput: Annotation<StrategyAgentOutput | null>,
   creatorOutput: Annotation<CreatorAgentOutput | null>,
   analystOutput: Annotation<AnalystAgentOutput | null>,
 });
 
 export interface SocialCrewGraphResult {
   request: GenerateRequest;
+  strategyOutput: StrategyAgentOutput | null;
   creatorOutput: CreatorAgentOutput | null;
   analystOutput: AnalystAgentOutput | null;
 }
@@ -26,16 +32,25 @@ export interface SocialCrewGraphResult {
 @Injectable()
 export class SocialCrewGraph {
   constructor(
+    private readonly strategyAgentService: StrategyAgentService,
     private readonly contentCreatorService: ContentCreatorService,
     private readonly socialAnalystService: SocialAnalystService,
   ) {}
 
   async invoke(request: GenerateRequest): Promise<SocialCrewGraphResult> {
     const graph = new StateGraph(SocialCrewState)
+      .addNode('strategy', async (state: unknown) => {
+        const safeState = this.toGraphState(state);
+        const strategyOutput = await this.strategyAgentService.run(
+          safeState.request,
+        );
+        return { strategyOutput };
+      })
       .addNode('creator', async (state: unknown) => {
         const safeState = this.toGraphState(state);
         const creatorOutput = await this.contentCreatorService.run(
           safeState.request,
+          safeState.strategyOutput ?? this.emptyStrategy(),
         );
         return { creatorOutput };
       })
@@ -45,22 +60,35 @@ export class SocialCrewGraph {
         const analystOutput = await this.socialAnalystService.run(
           safeState.request,
           safeState.creatorOutput?.posts ?? [],
+          safeState.strategyOutput ?? this.emptyStrategy(),
         );
 
         return { analystOutput };
       })
-      .addEdge(START, 'creator')
+      .addEdge(START, 'strategy')
+      .addEdge('strategy', 'creator')
       .addEdge('creator', 'analyst')
       .addEdge('analyst', END)
       .compile();
 
     const rawResult: unknown = await graph.invoke({
       request,
+      strategyOutput: null,
       creatorOutput: null,
       analystOutput: null,
     });
 
     return this.toGraphState(rawResult);
+  }
+
+  private emptyStrategy(): StrategyAgentOutput {
+    return {
+      angle: '',
+      audienceFit: '',
+      hookStyle: '',
+      ctaApproach: '',
+      brief: '',
+    };
   }
 
   private toGraphState(state: unknown): SocialCrewGraphResult {
@@ -74,6 +102,7 @@ export class SocialCrewGraph {
           tone: '',
           ctaStyle: '',
         },
+        strategyOutput: null,
         creatorOutput: null,
         analystOutput: null,
       };
@@ -92,6 +121,9 @@ export class SocialCrewGraph {
             tone: '',
             ctaStyle: '',
           },
+      strategyOutput: this.isStrategyOutput(maybeState.strategyOutput)
+        ? maybeState.strategyOutput
+        : null,
       creatorOutput: this.isCreatorOutput(maybeState.creatorOutput)
         ? maybeState.creatorOutput
         : null,
@@ -120,6 +152,22 @@ export class SocialCrewGraph {
       value === 'X' ||
       value === 'INSTAGRAM' ||
       value === 'THREADS'
+    );
+  }
+
+  private isStrategyOutput(value: unknown): value is StrategyAgentOutput {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const maybeValue = value as Partial<StrategyAgentOutput>;
+
+    return (
+      typeof maybeValue.angle === 'string' &&
+      typeof maybeValue.audienceFit === 'string' &&
+      typeof maybeValue.hookStyle === 'string' &&
+      typeof maybeValue.ctaApproach === 'string' &&
+      typeof maybeValue.brief === 'string'
     );
   }
 
