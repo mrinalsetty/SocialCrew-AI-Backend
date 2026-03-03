@@ -1,8 +1,3 @@
----
-
-# `backend/README.md`
-
-```md
 # SocialCrew AI Backend
 
 NestJS + Fastify backend for **SocialCrew AI**, a human-first AI content studio that turns one user idea into a full team-style conversation between three AI teammates:
@@ -12,6 +7,7 @@ NestJS + Fastify backend for **SocialCrew AI**, a human-first AI content studio 
 - an analyst
 
 The backend powers both:
+
 - the main generation workflow
 - follow-up team conversation
 - backend status and metadata endpoints
@@ -122,8 +118,7 @@ The backend currently supports:
 
 Backend dashboard UI
 
-This is not just a plain API root.
-It serves a visual dashboard showing:
+This is not just a plain API root. It serves a visual dashboard showing:
 
 - service name
 - status
